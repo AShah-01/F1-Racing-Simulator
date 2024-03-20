@@ -1,6 +1,7 @@
 import pygame
 import os
 import math
+import time
 pygame.init()
 
 
@@ -201,13 +202,16 @@ def main():
         keys_pressed = pygame.key.get_pressed()
 
         # Check for collisions and apply penalties
+        border_pos = (15, -5)
         posB = player1.get_pos()  # Get location of the Blue Car at any given point in time
         posR = player2.get_pos()  # Get location of the Red Car at any given point in time
-        if BORDER_MASK.overlap(BLUE_CAR_MASK, (posB[0], posB[1])):
+        if BORDER_MASK.overlap(BLUE_CAR_MASK, (border_pos[0] - posB[0], border_pos[1] - posB[1])):
+            print("Blue Collision")
             player1.speed -= SPEED * 2
             player1.x += 5  # Move the car slightly away from the border
 
-        if BORDER_MASK.overlap(RED_CAR_MASK, (posR[0], posR[1])):
+        if BORDER_MASK.overlap(RED_CAR_MASK, (border_pos[0] - posR[0], border_pos[1] - posR[1])):
+            print("Red Collision")
             player2.speed -= SPEED * 2
             player2.x += 5  # Move the car slightly away from the border
 
@@ -241,3 +245,4 @@ def main():
 # Start the game
 if __name__ == "__main__":
     main()
+    

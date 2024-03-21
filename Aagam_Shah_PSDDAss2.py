@@ -25,7 +25,6 @@ BORDER = pygame.transform.scale(pygame.image.load(os.path.join('Assets', 'Border
 BORDER_MASK = pygame.mask.from_surface(BORDER)
 
 FINISHLINE_IMAGE = pygame.image.load(os.path.join('Assets', 'Finishline.png'))
-
 FINISHLINE = pygame.transform.scale(FINISHLINE_IMAGE, (FINISHLINE_IMAGE.get_width(), FINISHLINE_IMAGE.get_height()))
 
 BLUE_CAR = pygame.transform.rotate(pygame.transform.scale(
@@ -44,7 +43,7 @@ class FinishLineTrigger:
         return self.rect.colliderect(player.rect)
 
 
-def check_lap_complete(player):
+def check_lap_complete(player1, player2, player):
     finish_line_x = 580  # X-coordinate of the finish line
     finish_line_y = 460  # Y-coordinate of the finish line
     finish_line_width = FINISHLINE.get_width()  # Width of the finish line
@@ -54,9 +53,18 @@ def check_lap_complete(player):
     finish_line_rect = pygame.Rect(finish_line_x, finish_line_y, finish_line_width, finish_line_height)
 
     # Check if the player has crossed the finish line completely
-    if finish_line_rect.colliderect(player.rect) and not player.crossed_finish_line:
-        player.laps += 1
-        player.crossed_finish_line = True
+    posB = player1.get_pos()  # Get location of the Blue Car at any given point in time
+    posR = player2.get_pos()  # Get location of the Red Car at any given point in time
+    if finish_line_rect.overlap(RED_CAR_MASK, (posR[0], posR[1])):
+        player2.laps += 1
+        player2.crossed_finish_line = True
+    if finish_line_rect.overlap(BLUE_CAR_MASK, (posB[0], posB[1])):
+        player1.laps += 1
+        player1.crossed_finish_line = True
+
+    # Reset crossed_finish_line flag if player is not colliding with finish line
+    if not finish_line_rect.colliderect(player.rect):
+        player.crossed_finish_line = False
 
 
 class Player:
@@ -77,7 +85,7 @@ class Player:
         self.rect = self.color.get_rect(topleft=(self.x, self.y))
         self.angle = 180
         self.speed = 0
-        self.laps = 0
+        self.laps = -1
         self.crossed_finish_line = False
 
 
@@ -161,7 +169,7 @@ def handle_input(event):
 def draw_window(player1, player2):
     WIN.blit(BACKGROUND, (0, 0))
     WIN.blit(TRACK, (0, 0))
-    WIN.blit(BORDER, (15, -5))
+    WIN.blit(BORDER, (0, 0))
     WIN.blit(FINISHLINE, (580, 460))
     # pygame.draw.line(WIN, (255, 255, 255), (600, 459), (610, 550), 1)  # Finish line
     player1.draw()
@@ -188,9 +196,6 @@ def main():
     player1 = Player(610, 480, BLUE_CAR, "player1")
     player2 = Player(610, 520, RED_CAR, "player2")
 
-    # Create the finish line trigger object
-    finish_line_trigger = FinishLineTrigger(165, 530, 1, 20)
-
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -202,18 +207,23 @@ def main():
         keys_pressed = pygame.key.get_pressed()
 
         # Check for collisions and apply penalties
-        border_pos = (15, -5)
         posB = player1.get_pos()  # Get location of the Blue Car at any given point in time
         posR = player2.get_pos()  # Get location of the Red Car at any given point in time
-        if BORDER_MASK.overlap(BLUE_CAR_MASK, (border_pos[0] - posB[0], border_pos[1] - posB[1])):
+        if BORDER_MASK.overlap(BLUE_CAR_MASK, (posB[0], posB[1])):
             print("Blue Collision")
-            player1.speed -= SPEED * 2
-            player1.x += 5  # Move the car slightly away from the border
+            if player1.speed > 0:  # If car is moving forward
+                player1.speed = -SPEED * 2  # Set speed to reverse
+            else:
+                player1.speed = SPEED * 2  # Set speed to forward
+            player1.x -= 5  # Move the car slightly away from the border
 
-        if BORDER_MASK.overlap(RED_CAR_MASK, (border_pos[0] - posR[0], border_pos[1] - posR[1])):
+        if BORDER_MASK.overlap(RED_CAR_MASK, (posR[0], posR[1])):
             print("Red Collision")
-            player2.speed -= SPEED * 2
-            player2.x += 5  # Move the car slightly away from the border
+            if player2.speed > 0:  # If car is moving forward
+                player2.speed = -SPEED * 2  # Set speed to reverse
+            else:
+                player2.speed = SPEED * 2  # Set speed to forward
+            player2.x -= 5  # Move the car slightly away from the border
 
         player1.move(keys_pressed)
         player2.move(keys_pressed)
@@ -245,4 +255,3 @@ def main():
 # Start the game
 if __name__ == "__main__":
     main()
-    

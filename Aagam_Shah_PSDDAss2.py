@@ -43,28 +43,30 @@ class FinishLineTrigger:
         return self.rect.colliderect(player.rect)
 
 
-def check_lap_complete(player1, player2, player):
+def check_lap_complete(player1, player2):
     finish_line_x = 580  # X-coordinate of the finish line
     finish_line_y = 460  # Y-coordinate of the finish line
     finish_line_width = FINISHLINE.get_width()  # Width of the finish line
     finish_line_height = FINISHLINE.get_height()  # Height of the finish line
 
     # Calculate the coordinates of the finish line rectangle
-    finish_line_rect = pygame.Rect(finish_line_x, finish_line_y, finish_line_width, finish_line_height)
+    FINISH_LINE_RECT = pygame.Rect(finish_line_x, finish_line_y, finish_line_width, finish_line_height)
 
     # Check if the player has crossed the finish line completely
     posB = player1.get_pos()  # Get location of the Blue Car at any given point in time
     posR = player2.get_pos()  # Get location of the Red Car at any given point in time
-    if finish_line_rect.overlap(RED_CAR_MASK, (posR[0], posR[1])):
-        player2.laps += 1
-        player2.crossed_finish_line = True
-    if finish_line_rect.overlap(BLUE_CAR_MASK, (posB[0], posB[1])):
+    if BLUE_CAR_MASK.overlap(BLUE_CAR_MASK, (posB[0], posB[1])):
         player1.laps += 1
         player1.crossed_finish_line = True
+    if RED_CAR_MASK.overlap(RED_CAR_MASK, (posR[0], posR[1])):
+        player2.laps += 1
+        player2.crossed_finish_line = True
 
     # Reset crossed_finish_line flag if player is not colliding with finish line
-    if not finish_line_rect.colliderect(player.rect):
-        player.crossed_finish_line = False
+    if not FINISH_LINE_RECT.colliderect(player1.rect):
+        player1.crossed_finish_line = False
+    if not FINISH_LINE_RECT.colliderect(player2.rect):
+        player2.crossed_finish_line = False
 
 
 class Player:
@@ -229,8 +231,7 @@ def main():
         player2.move(keys_pressed)
 
         # Call check_lap_complete function for both players
-        check_lap_complete(player1)
-        check_lap_complete(player2)
+        check_lap_complete(player1, player2)
 
         player1.crossed_finish_line = False  # Reset finish line flag for player 1
         player2.crossed_finish_line = False  # Reset finish line flag for player 2

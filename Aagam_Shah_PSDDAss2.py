@@ -1,6 +1,7 @@
 import pygame
 import os
 import math
+import time
 pygame.init()
 
 
@@ -12,10 +13,11 @@ FPS = 60
 SPEED = 3
 REVERSE_SPEED = 1.5
 CAR_WIDTH, CAR_HEIGHT = 45, 18
-LAPS_TO_WIN = 100
+LAPS_TO_WIN = 50
 ANGLE = 180
 FINISH_POSITION = 580, 460
 
+show_title = True  # Move this outside the draw_window function
 
 BACKGROUND = pygame.transform.scale(pygame.image.load(os.path.join('Assets', 'GrassBackground.jpg')), (WIDTH, HEIGHT))
 TRACK = pygame.transform.scale(pygame.image.load(os.path.join('Assets', 'Curcuit.png')), (WIDTH, HEIGHT))
@@ -24,8 +26,9 @@ BORDER = pygame.transform.scale(pygame.image.load(os.path.join('Assets', 'Border
 BORDER_MASK = pygame.mask.from_surface(BORDER)
 
 FINISHLINE_IMAGE = pygame.image.load(os.path.join('Assets', 'Finishline.png'))
-
 FINISHLINE = pygame.transform.scale(FINISHLINE_IMAGE, (FINISHLINE_IMAGE.get_width(), FINISHLINE_IMAGE.get_height()))
+
+TITLE = pygame.image.load(os.path.join('Assets', 'Title_Img.png'))
 
 BLUE_CAR = pygame.transform.rotate(pygame.transform.scale(
     pygame.image.load(os.path.join('Assets', 'BLUE_CAR.png')), (CAR_WIDTH, CAR_HEIGHT)), ANGLE)
@@ -43,19 +46,28 @@ class FinishLineTrigger:
         return self.rect.colliderect(player.rect)
 
 
-def check_lap_complete(player):
+def check_lap_complete(player1, player2):
     finish_line_x = 580  # X-coordinate of the finish line
     finish_line_y = 460  # Y-coordinate of the finish line
     finish_line_width = FINISHLINE.get_width()  # Width of the finish line
     finish_line_height = FINISHLINE.get_height()  # Height of the finish line
 
     # Calculate the coordinates of the finish line rectangle
-    finish_line_rect = pygame.Rect(finish_line_x, finish_line_y, finish_line_width, finish_line_height)
+    FINISH_LINE_RECT = pygame.Rect(finish_line_x, finish_line_y, finish_line_width, finish_line_height)
 
     # Check if the player has crossed the finish line completely
-    if finish_line_rect.colliderect(player.rect) and not player.crossed_finish_line:
-        player.laps += 1
-        player.crossed_finish_line = True
+    if pygame.Rect.colliderect(FINISH_LINE_RECT, player1.rect):
+        player1.laps += 1
+        player1.crossed_finish_line = True
+    if pygame.Rect.colliderect(FINISH_LINE_RECT, player2.rect):
+        player2.laps += 1
+        player2.crossed_finish_line = True
+
+    # Reset crossed_finish_line flag if player is not colliding with finish line
+    if not FINISH_LINE_RECT.colliderect(player1.rect):
+        player1.crossed_finish_line = False
+    if not FINISH_LINE_RECT.colliderect(player2.rect):
+        player2.crossed_finish_line = False
 
 
 class Player:
@@ -76,7 +88,7 @@ class Player:
         self.rect = self.color.get_rect(topleft=(self.x, self.y))
         self.angle = 180
         self.speed = 0
-        self.laps = 0
+        self.laps = -1
         self.crossed_finish_line = False
 
 
@@ -158,21 +170,34 @@ def handle_input(event):
 
 # The Draw the background
 def draw_window(player1, player2):
+    global show_title  # Add this line to access the global variable
     WIN.blit(BACKGROUND, (0, 0))
     WIN.blit(TRACK, (0, 0))
-    WIN.blit(BORDER, (15, -5))
+    WIN.blit(BORDER, (0, 0))
     WIN.blit(FINISHLINE, (580, 460))
+
+    # start_time = pygame.time.get_ticks()  # Get the current time
+
+    # if show_title:  
+    #     WIN.blit(TITLE, (0, 0))
+    #     pygame.display.update()  # Update the display to show the title
+
+    #     if pygame.time.get_ticks() - start_time <= 5000:  # Check if 5 seconds have elapsed
+    #         return
+    #     else:
+    #         show_title = False  # Stop showing the title after 5 seconds
+
     # pygame.draw.line(WIN, (255, 255, 255), (600, 459), (610, 550), 1)  # Finish line
     player1.draw()
     player2.draw()
 
     # Display laps completed for player 1 in the top left corner
     font = pygame.font.Font(None, 36)
-    text = font.render(f"Player 1: {player1.laps} laps", True, (255, 255, 255))
+    text = font.render(f"Player 1: {player1.laps} laps", True, (0, 80, 189))
     WIN.blit(text, (10, 10))
 
     # Display laps completed for player 2 in the top right corner
-    text = font.render(f"Player 2: {player2.laps} laps", True, (255, 255, 255))
+    text = font.render(f"Player 2: {player2.laps} laps", True, (255, 0, 0))
     text_rect = text.get_rect()
     text_rect.right = WIDTH - 10
     text_rect.top = 10
@@ -186,9 +211,6 @@ def main():
     clock = pygame.time.Clock()
     player1 = Player(610, 480, BLUE_CAR, "player1")
     player2 = Player(610, 520, RED_CAR, "player2")
-
-    # Create the finish line trigger object
-    finish_line_trigger = FinishLineTrigger(165, 530, 1, 20)
 
     while True:
         for event in pygame.event.get():
@@ -204,19 +226,28 @@ def main():
         posB = player1.get_pos()  # Get location of the Blue Car at any given point in time
         posR = player2.get_pos()  # Get location of the Red Car at any given point in time
         if BORDER_MASK.overlap(BLUE_CAR_MASK, (posB[0], posB[1])):
-            player1.speed -= SPEED * 2
-            player1.x += 5  # Move the car slightly away from the border
+            print("Blue Collision")
+            if player1.speed > 0:  # If car is moving forward
+                player1.speed -= SPEED
+                time.sleep(1)
+            else:
+                player1.speed -= REVERSE_SPEED
+                time.sleep(1)
 
         if BORDER_MASK.overlap(RED_CAR_MASK, (posR[0], posR[1])):
-            player2.speed -= SPEED * 2
-            player2.x += 5  # Move the car slightly away from the border
+            print("Red Collision")
+            if player2.speed > 0:  # If car is moving forward
+                player2.speed -= SPEED
+                time.sleep(1)
+            else:
+                player2.speed -= REVERSE_SPEED
+                time.sleep(1)
 
         player1.move(keys_pressed)
         player2.move(keys_pressed)
 
         # Call check_lap_complete function for both players
-        check_lap_complete(player1)
-        check_lap_complete(player2)
+        check_lap_complete(player1, player2)
 
         player1.crossed_finish_line = False  # Reset finish line flag for player 1
         player2.crossed_finish_line = False  # Reset finish line flag for player 2
@@ -229,12 +260,12 @@ def main():
         if player1.laps >= LAPS_TO_WIN:
             print("Player 1 wins!")
             print(f"Player 1 completed {player1.laps} laps.")
-            pygame.quit()
+            main
             return
         elif player2.laps >= LAPS_TO_WIN:
             print("Player 2 wins!")
             print(f"Player 2 completed {player2.laps} laps.")
-            pygame.quit()
+            main
             return
 
 

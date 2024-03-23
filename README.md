@@ -25,5 +25,7 @@ This code has entirely been written by me.
 
 
 This does not have a licence but everything is under copyright law along with my name
-11 pm, 19/03/2024 (dd/mm/yyyy), Aagam Shah
+11 pm, 19/03/2024, Aagam Shah
 F1-Racing Simulator©
+
+If you manage to figure out something please send me an email at aagam.spare@gmail.com

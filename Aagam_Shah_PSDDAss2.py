@@ -56,10 +56,10 @@ def check_lap_complete(player1, player2):
     FINISH_LINE_RECT = pygame.Rect(finish_line_x, finish_line_y, finish_line_width, finish_line_height)
 
     # Check if the player has crossed the finish line completely
-    if pygame.Rect.colliderect(FINISH_LINE_RECT, player1.rect):
+    if pygame.Rect.colliderect(FINISH_LINE_RECT, player1.rect) and not player1.crossed_finish_line:
         player1.laps += 1
         player1.crossed_finish_line = True
-    if pygame.Rect.colliderect(FINISH_LINE_RECT, player2.rect):
+    if pygame.Rect.colliderect(FINISH_LINE_RECT, player2.rect) and not player2.crossed_finish_line:
         player2.laps += 1
         player2.crossed_finish_line = True
 
@@ -229,20 +229,20 @@ def main():
             print("Blue Collision")
             if player1.speed > 0:  # If car is moving forward
                 player1.speed -= SPEED
-                time.sleep(1)
+                #time.sleep(1)
             else:
                 player1.speed -= REVERSE_SPEED
-                time.sleep(1)
+                #time.sleep(1)
             player1 -= 5  # Move the car slightly away from the border
 
         if BORDER_MASK.overlap(RED_CAR_MASK, (posR[0], posR[1])):
             print("Red Collision")
             if player2.speed > 0:  # If car is moving forward
                 player2.speed -= SPEED
-                time.sleep(1)
+                #time.sleep(1)
             else:
                 player2.speed -= REVERSE_SPEED
-                time.sleep(1)
+                #time.sleep(1)
             
 
         player1.move(keys_pressed)
@@ -251,8 +251,8 @@ def main():
         # Call check_lap_complete function for both players
         check_lap_complete(player1, player2)
 
-        player1.crossed_finish_line = False  # Reset finish line flag for player 1
-        player2.crossed_finish_line = False  # Reset finish line flag for player 2
+        # player1.crossed_finish_line = False  # Reset finish line flag for player 1
+        # player2.crossed_finish_line = False  # Reset finish line flag for player 2
 
         draw_window(player1, player2)
 

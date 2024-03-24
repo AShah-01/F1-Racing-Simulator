@@ -2,22 +2,26 @@ import pygame
 import os
 import math
 import time
-pygame.init()
 
+pygame.init()
 
 WIDTH, HEIGHT = 900, 550
 WIN = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("F1 Racing Game")
 
 FPS = 60
-SPEED = 3
-REVERSE_SPEED = 1.5
+SPEED = 2.5
+REVERSE_SPEED = 1
 CAR_WIDTH, CAR_HEIGHT = 45, 18
-LAPS_TO_WIN = 50
+LAPS_TO_WIN = 5
 ANGLE = 180
 FINISH_POSITION = 580, 460
 
-show_title = True  # Move this outside the draw_window function
+show_title = True 
+show_count3 = True
+show_count2 = True
+show_count1 = True
+show_count0 = True
 
 BACKGROUND = pygame.transform.scale(pygame.image.load(os.path.join('Assets', 'GrassBackground.jpg')), (WIDTH, HEIGHT))
 TRACK = pygame.transform.scale(pygame.image.load(os.path.join('Assets', 'Curcuit.png')), (WIDTH, HEIGHT))
@@ -28,7 +32,14 @@ BORDER_MASK = pygame.mask.from_surface(BORDER)
 FINISHLINE_IMAGE = pygame.image.load(os.path.join('Assets', 'Finishline.png'))
 FINISHLINE = pygame.transform.scale(FINISHLINE_IMAGE, (FINISHLINE_IMAGE.get_width(), FINISHLINE_IMAGE.get_height()))
 
+CHECKPOINT_IMAGE = pygame.image.load(os.path.join('Assets', 'Checkpoint.png'))
+CHECKPOINT = pygame.transform.scale(CHECKPOINT_IMAGE, (CHECKPOINT_IMAGE.get_width(), CHECKPOINT_IMAGE.get_height()))
+
 TITLE = pygame.image.load(os.path.join('Assets', 'Title_Img.png'))
+COUNT3 = pygame.image.load(os.path.join('Assets', 'Countdown3.png'))
+COUNT2 = pygame.image.load(os.path.join('Assets', 'Countdown2.png'))
+COUNT1 = pygame.image.load(os.path.join('Assets', 'Countdown1.png'))
+COUNT0 = pygame.image.load(os.path.join('Assets', 'CountdownGO.png'))
 
 BLUE_CAR = pygame.transform.rotate(pygame.transform.scale(
     pygame.image.load(os.path.join('Assets', 'BLUE_CAR.png')), (CAR_WIDTH, CAR_HEIGHT)), ANGLE)
@@ -37,6 +48,22 @@ RED_CAR = pygame.transform.rotate(pygame.transform.scale(
     pygame.image.load(os.path.join('Assets', 'RED_CAR.png')), (CAR_WIDTH, CAR_HEIGHT)), ANGLE)
 RED_CAR_MASK = pygame.mask.from_surface(RED_CAR)
 
+RED_WIN = pygame.image.load(os.path.join('Assets', 'RedVictory.png'))
+BLUE_WIN = pygame.image.load(os.path.join('Assets', 'BlueVictory.png'))
+
+finish_line_x = 580  # X-coordinate of the finish line
+finish_line_y = 460  # Y-coordinate of the finish line
+finish_line_width = FINISHLINE.get_width()  # Width of the finish line
+finish_line_height = FINISHLINE.get_height()  # Height of the finish line
+
+checkpoint_x = 0  # Define the x-coordinate of the checkpoint
+checkpoint_y = 120  # Define the y-coordinate of the checkpoint
+checkpoint_width = CHECKPOINT.get_width()  # Width of the checkpoint
+checkpoint_height = CHECKPOINT.get_height()  # Height of the checkpoint
+
+FINISH_LINE_RECT = pygame.Rect(finish_line_x, finish_line_y, finish_line_width, finish_line_height)
+CHECK_POINT_RECT = pygame.Rect(checkpoint_x, checkpoint_y, checkpoint_width, checkpoint_height)
+
 
 class FinishLineTrigger:
     def __init__(self, x, y, width, height):
@@ -44,30 +71,40 @@ class FinishLineTrigger:
 
     def check_collision(self, player):
         return self.rect.colliderect(player.rect)
+    
+
+class CheckPointTrigger:
+    def __init__(self, x, y, width, height):
+        self.rect = pygame.Rect(x, y, width, height)
+    
+    def check_collision(self, player):
+        return self.rect.colliderect(player.rect)
 
 
 def check_lap_complete(player1, player2):
-    finish_line_x = 580  # X-coordinate of the finish line
-    finish_line_y = 460  # Y-coordinate of the finish line
-    finish_line_width = FINISHLINE.get_width()  # Width of the finish line
-    finish_line_height = FINISHLINE.get_height()  # Height of the finish line
+    p1checkpoint = False
+    p2checkpoint = False
 
-    # Calculate the coordinates of the finish line rectangle
-    FINISH_LINE_RECT = pygame.Rect(finish_line_x, finish_line_y, finish_line_width, finish_line_height)
+    if CHECK_POINT_RECT.colliderect(player1.rect) and not player1.crossed_checkpoint:
+        p1checkpoint = True
+        player1.crossed_checkpoint = True  # Mark the checkpoint as crossed
+    if CHECK_POINT_RECT.colliderect(player2.rect) and not player2.crossed_checkpoint:
+        p2checkpoint = True
+        player2.crossed_checkpoint = True  # Mark the checkpoint as crossed
 
-    # Check if the player has crossed the finish line completely
-    if pygame.Rect.colliderect(FINISH_LINE_RECT, player1.rect):
+    if FINISH_LINE_RECT.colliderect(player1.rect) and p1checkpoint and not player1.crossed_finish_line:
         player1.laps += 1
         player1.crossed_finish_line = True
-    if pygame.Rect.colliderect(FINISH_LINE_RECT, player2.rect):
+        player1.crossed_checkpoint = False  # Reset checkpoint flag
+    if FINISH_LINE_RECT.colliderect(player2.rect) and p2checkpoint and not player2.crossed_finish_line:
         player2.laps += 1
         player2.crossed_finish_line = True
+        player2.crossed_checkpoint = False  # Reset checkpoint flag
 
-    # Reset crossed_finish_line flag if player is not colliding with finish line
-    if not FINISH_LINE_RECT.colliderect(player1.rect):
-        player1.crossed_finish_line = False
-    if not FINISH_LINE_RECT.colliderect(player2.rect):
-        player2.crossed_finish_line = False
+    if not CHECK_POINT_RECT.colliderect(player1.rect):
+        player1.crossed_checkpoint = False
+    if not CHECK_POINT_RECT.colliderect(player2.rect):
+        player2.crossed_checkpoint = False
 
 
 class Player:
@@ -88,8 +125,9 @@ class Player:
         self.rect = self.color.get_rect(topleft=(self.x, self.y))
         self.angle = 180
         self.speed = 0
-        self.laps = -1
+        self.laps = 0
         self.crossed_finish_line = False
+        self.crossed_checkpoint = False
 
 
     def move(self, keys_pressed):
@@ -170,24 +208,44 @@ def handle_input(event):
 
 # The Draw the background
 def draw_window(player1, player2):
-    global show_title  # Add this line to access the global variable
+    global show_title
+    global show_count3
+    global show_count2
+    global show_count1
+    global show_count0
+    
     WIN.blit(BACKGROUND, (0, 0))
     WIN.blit(TRACK, (0, 0))
     WIN.blit(BORDER, (0, 0))
     WIN.blit(FINISHLINE, (580, 460))
+    WIN.blit(CHECKPOINT, (220, -1))
 
-    # start_time = pygame.time.get_ticks()  # Get the current time
+    if show_title:  # Start showing the title for 5 seconds
+        WIN.blit(TITLE, (0, 0))
+        pygame.display.update()  # Update the display to show the title
+        time.sleep(5)
+        show_title = False  # Stop showing the title after 5 seconds
+    if show_count3:  # Start showing the title for 5 seconds
+        WIN.blit(COUNT3, (0, 0))
+        pygame.display.update()  # Update the display to show the title
+        time.sleep(1)
+        show_count3 = False  # Stop showing the title after 5 seconds
+    if show_count2:  # Start showing the title for 5 seconds
+        WIN.blit(COUNT2, (0, 0))
+        pygame.display.update()  # Update the display to show the title
+        time.sleep(1)
+        show_count2 = False  # Stop showing the title after 5 seconds
+    if show_count1:  # Start showing the title for 5 seconds
+        WIN.blit(COUNT1, (0, 0))
+        pygame.display.update()  # Update the display to show the title
+        time.sleep(1)
+        show_count1 = False  # Stop showing the title after 5 seconds
+    if show_count0:  # Start showing the title for 5 seconds
+        WIN.blit(COUNT0, (0, 0))
+        pygame.display.update()  # Update the display to show the title
+        time.sleep(1)
+        show_count0 = False  # Stop showing the title after 5 seconds
 
-    # if show_title:  
-    #     WIN.blit(TITLE, (0, 0))
-    #     pygame.display.update()  # Update the display to show the title
-
-    #     if pygame.time.get_ticks() - start_time <= 5000:  # Check if 5 seconds have elapsed
-    #         return
-    #     else:
-    #         show_title = False  # Stop showing the title after 5 seconds
-
-    # pygame.draw.line(WIN, (255, 255, 255), (600, 459), (610, 550), 1)  # Finish line
     player1.draw()
     player2.draw()
 
@@ -226,22 +284,57 @@ def main():
         posB = player1.get_pos()  # Get location of the Blue Car at any given point in time
         posR = player2.get_pos()  # Get location of the Red Car at any given point in time
         if BORDER_MASK.overlap(BLUE_CAR_MASK, (posB[0], posB[1])):
-            print("Blue Collision")
+            # print("Blue Collision")
             if player1.speed > 0:  # If car is moving forward
-                player1.speed -= SPEED
-                time.sleep(1)
+                player1.speed -= SPEED*2
+                #time.sleep(1)
             else:
-                player1.speed -= REVERSE_SPEED
-                time.sleep(1)
+                player1.speed += REVERSE_SPEED*2
+                #time.sleep(1)
 
         if BORDER_MASK.overlap(RED_CAR_MASK, (posR[0], posR[1])):
-            print("Red Collision")
+            # print("Red Collision")
+            if player2.speed > 0:  # If car is moving forward
+                player2.speed -= SPEED*2
+                #time.sleep(1)
+            else:
+                player2.speed += REVERSE_SPEED*2
+                #time.sleep(1)
+        
+
+        if BLUE_CAR_MASK.overlap(RED_CAR_MASK, (posR[0] - posB[0], posR[1] - posB[1])):
+            # print("Red car collision")
             if player2.speed > 0:  # If car is moving forward
                 player2.speed -= SPEED
-                time.sleep(1)
+                #time.sleep(1)
             else:
-                player2.speed -= REVERSE_SPEED
-                time.sleep(1)
+                player2.speed += REVERSE_SPEED
+                #time.sleep(1)
+            if BLUE_CAR_MASK.overlap(BORDER_MASK, (posB[0], posB[1])):
+                # print("Blue Collision")
+                if player1.speed > 0:  # If car is moving forward
+                    player1.speed -= SPEED*3
+                    #time.sleep(1)
+                else:
+                    player1.speed += SPEED*2
+                    #time.sleep(1)
+        
+        if RED_CAR_MASK.overlap(BLUE_CAR_MASK, (posB[0] - posR[0], posB[1] - posR[1])):
+            # print("Blue car collision")
+            if player1.speed > 0:  # If car is moving forward
+                player1.speed -= SPEED
+                #time.sleep(1)
+            else:
+                player1.speed += REVERSE_SPEED
+                #time.sleep(1)
+            if RED_CAR_MASK.overlap(BORDER_MASK, (posR[0], posR[1])):
+                # print("Red Collision")
+                if player2.speed > 0:  # If car is moving forward
+                    player2.speed -= SPEED*3
+                    #time.sleep(1)
+                else:
+                    player2.speed += SPEED*2
+                    # time.sleep(1)
 
         player1.move(keys_pressed)
         player2.move(keys_pressed)
@@ -249,8 +342,8 @@ def main():
         # Call check_lap_complete function for both players
         check_lap_complete(player1, player2)
 
-        player1.crossed_finish_line = False  # Reset finish line flag for player 1
-        player2.crossed_finish_line = False  # Reset finish line flag for player 2
+        # player1.crossed_finish_line = False  # Reset finish line flag for player 1
+        # player2.crossed_finish_line = False  # Reset finish line flag for player 2
 
         draw_window(player1, player2)
 
@@ -260,14 +353,12 @@ def main():
         if player1.laps >= LAPS_TO_WIN:
             print("Player 1 wins!")
             print(f"Player 1 completed {player1.laps} laps.")
-            main
+            WIN.blit(BLUE_WIN)
             return
         elif player2.laps >= LAPS_TO_WIN:
-            print("Player 2 wins!")
-            print(f"Player 2 completed {player2.laps} laps.")
-            main
+            WIN.blit(RED_WIN)
             return
-
+        main()
 
 # Start the game
 if __name__ == "__main__":

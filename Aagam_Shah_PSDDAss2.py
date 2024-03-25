@@ -294,19 +294,19 @@ def main():
         if BORDER_MASK.overlap(BLUE_CAR_MASK, (posB[0], posB[1])):
             # print("Blue Collision")
             if player1.speed > 0:  # If car is moving forward
-                player1.speed -= SPEED
+                player1.speed -= SPEED*2
                 #time.sleep(1)
             else:
-                player1.speed += SPEED
+                player1.speed += SPEED*1.5
                 #time.sleep(1)
 
         if BORDER_MASK.overlap(RED_CAR_MASK, (posR[0], posR[1])):
             # print("Red Collision")
             if player2.speed > 0:  # If car is moving forward
-                player2.speed -= SPEED
+                player2.speed -= SPEED*2
                 #time.sleep(1)
             else:
-                player2.speed += SPEED
+                player2.speed += SPEED*1.5
                 #time.sleep(1)
 
         if BLUE_CAR_MASK.overlap(RED_CAR_MASK, (posR[0] - posB[0], posR[1] - posB[1])):
@@ -323,7 +323,7 @@ def main():
                     player1.speed -= SPEED*3
                     #time.sleep(1)
                 else:
-                    player1.speed += SPEED*2
+                    player1.speed += SPEED*2.5
                     #time.sleep(1)
 
         if RED_CAR_MASK.overlap(BLUE_CAR_MASK, (posB[0] - posR[0], posB[1] - posR[1])):
@@ -340,7 +340,7 @@ def main():
                     player2.speed -= SPEED*3
                     #time.sleep(1)
                 else:
-                    player2.speed += SPEED*2
+                    player2.speed += SPEED*2.5
                     # time.sleep(1)
 
         player1.move(keys_pressed)

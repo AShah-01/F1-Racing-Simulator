@@ -85,29 +85,21 @@ class CheckPointTrigger:
 
 
 def check_lap_complete(player1, player2):
-    if FINISH_LINE_RECT.colliderect(player1.rect) and not player1.crossed_finish_line:
-        player1.crossed_finish_line = True
-    if FINISH_LINE_RECT.colliderect(player2.rect) and not player2.crossed_finish_line:
-        player2.crossed_finish_line = True
-
     if CHECK_POINT_RECT.colliderect(player1.rect) and not player1.crossed_checkpoint:
         player1.crossed_checkpoint = True 
     if CHECK_POINT_RECT.colliderect(player2.rect) and not player2.crossed_checkpoint:
         player2.crossed_checkpoint = True 
 
-
-    if player1.crossed_finish_line == True:
-        if player1.crossed_checkpoint == True:
-            player1.laps += 1
-            player1.crossed_finish_line = False
-            player1.crossed_checkpoint = False  # Reset checkpoint flag
-            # print("Player 1 completed a lap")
-    if player2.crossed_finish_line == True:
-        if player2.crossed_checkpoint == True:
-            player2.laps += 1
-            player2.crossed_finish_line = False
-            player2.crossed_checkpoint = False  # Reset checkpoint flag
-            # print("Player 2 completed a lap")
+    if player1.crossed_checkpoint == True and FINISH_LINE_RECT.colliderect(player1.rect):
+        player1.laps += 1
+        player1.crossed_finish_line = False
+        player1.crossed_checkpoint = False  # Reset checkpoint flag
+        # print("Player 1 completed a lap")
+    if player2.crossed_checkpoint == True and FINISH_LINE_RECT.colliderect(player2.rect):
+        player2.laps += 1
+        player2.crossed_finish_line = False
+        player2.crossed_checkpoint = False  # Reset checkpoint flag
+        # print("Player 2 completed a lap")
 
 
 class Player:
